@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { TrainingInvoice } from '@/lib/database';
+import { TrainingInvoice } from '@/lib/database.pg';
 import ParticipantsTable from './ParticipantsTable';
 
 // Form validation schema

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TrainingInvoice } from '@/lib/database';
+import { TrainingInvoice } from '@/lib/database.pg';
 import { format } from 'date-fns';
 import { CheckSquare, Square, Calendar, FileText } from 'lucide-react';
 

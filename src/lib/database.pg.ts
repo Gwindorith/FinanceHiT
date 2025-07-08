@@ -128,7 +128,7 @@ export async function updateTrainingInvoice(id: number, invoice: Partial<Trainin
 
 export async function deleteTrainingInvoice(id: number): Promise<boolean> {
   const res = await pool.query('DELETE FROM training_invoices WHERE id = $1', [id]);
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function getParticipantsByInvoice(training_invoice_id: number): Promise<Participant[]> {
@@ -162,7 +162,7 @@ export async function getParticipantById(id: number): Promise<Participant | unde
 
 export async function deleteParticipant(id: number): Promise<boolean> {
   const res = await pool.query('DELETE FROM participants WHERE id = $1', [id]);
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export function calculateTotalAmount(trainerCosts: number, officeCosts: number, marginPercentage: number): number {
