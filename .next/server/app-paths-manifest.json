@@ -1,8 +1,6 @@
 {
-  "/_not-found": "app/_not-found.js",
-  "/api/participants/route": "app/api/participants/route.js",
-  "/api/training-invoices/route": "app/api/training-invoices/route.js",
-  "/api/participants/[id]/route": "app/api/participants/[id]/route.js",
+  "/not-found": "app/not-found.js",
   "/page": "app/page.js",
-  "/api/training-invoices/[id]/route": "app/api/training-invoices/[id]/route.js"
+  "/api/participants/route": "app/api/participants/route.js",
+  "/api/training-invoices/route": "app/api/training-invoices/route.js"
 }
