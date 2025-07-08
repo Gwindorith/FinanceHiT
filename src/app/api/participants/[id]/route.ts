@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getParticipantById, updateParticipant, deleteParticipant } from '@/lib/database.pg';
 import { z } from 'zod';
 
 const ParticipantSchema = z.object({
@@ -13,12 +13,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getDatabase();
     const id = parseInt(params.id);
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'Invalid participant id' }, { status: 400 });
     }
-    const participant = db.getParticipantById(id);
+    const participant = await getParticipantById(id);
     if (!participant) {
       return NextResponse.json({ success: false, error: 'Participant not found' }, { status: 404 });
     }
@@ -33,14 +32,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getDatabase();
     const id = parseInt(params.id);
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'Invalid participant id' }, { status: 400 });
     }
     const body = await request.json();
     const validated = ParticipantSchema.parse(body);
-    const participant = db.updateParticipant(id, validated);
+    const participant = await updateParticipant(id, validated);
     if (!participant) {
       return NextResponse.json({ success: false, error: 'Participant not found' }, { status: 404 });
     }
@@ -58,12 +56,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getDatabase();
     const id = parseInt(params.id);
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'Invalid participant id' }, { status: 400 });
     }
-    const deleted = db.deleteParticipant(id);
+    const deleted = await deleteParticipant(id);
     if (!deleted) {
       return NextResponse.json({ success: false, error: 'Participant not found' }, { status: 404 });
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getParticipantsByInvoice, addParticipant } from '@/lib/database.pg';
 import { z } from 'zod';
 
 const ParticipantSchema = z.object({
@@ -17,13 +17,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'training_invoice_id is required' }, { status: 400 });
     }
     
-    const db = getDatabase();
     const invoiceId = parseInt(training_invoice_id);
     if (isNaN(invoiceId)) {
       return NextResponse.json({ success: false, error: 'Invalid training_invoice_id' }, { status: 400 });
     }
     
-    const participants = db.getParticipantsByInvoice(invoiceId);
+    const participants = await getParticipantsByInvoice(invoiceId);
     return NextResponse.json({ success: true, data: participants });
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to fetch participants' }, { status: 500 });
@@ -39,7 +38,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'training_invoice_id is required' }, { status: 400 });
     }
     
-    const db = getDatabase();
     const invoiceId = parseInt(training_invoice_id);
     if (isNaN(invoiceId)) {
       return NextResponse.json({ success: false, error: 'Invalid training_invoice_id' }, { status: 400 });
@@ -47,7 +45,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     const validated = ParticipantSchema.parse(body);
-    const participant = db.addParticipant({ training_invoice_id: invoiceId, ...validated });
+    const participant = await addParticipant({ training_invoice_id: invoiceId, ...validated });
     return NextResponse.json({ success: true, data: participant }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

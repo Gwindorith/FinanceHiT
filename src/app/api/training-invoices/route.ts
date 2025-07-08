@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase, TrainingInvoice } from '@/lib/database';
+import { getAllTrainingInvoices, createTrainingInvoice, calculateTotalAmount, TrainingInvoice } from '@/lib/database.pg';
 import { z } from 'zod';
 
 // Validation schema for creating/updating training invoices
@@ -27,8 +27,7 @@ const TrainingInvoiceSchema = z.object({
 
 export async function GET() {
   try {
-    const db = getDatabase();
-    const invoices = db.getAllTrainingInvoices();
+    const invoices = await getAllTrainingInvoices();
     
     return NextResponse.json({ success: true, data: invoices });
   } catch (error) {
@@ -47,8 +46,6 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = TrainingInvoiceSchema.parse(body);
     
-    const db = getDatabase();
-    
     // Calculate duration as the number of unique dates
     const uniqueDates = Array.from(new Set(validatedData.training_dates.map(d => d.date)));
     const duration_days = uniqueDates.length;
@@ -56,14 +53,14 @@ export async function POST(request: NextRequest) {
     // Calculate total invoice amount if not provided
     let totalAmount = validatedData.total_invoice_amount;
     if (!totalAmount) {
-      totalAmount = db.calculateTotalAmount(
+      totalAmount = calculateTotalAmount(
         validatedData.trainer_costs,
         validatedData.office_costs,
         validatedData.margin_percentage
       );
     }
     
-    const invoice = db.createTrainingInvoice({
+    const invoice = await createTrainingInvoice({
       ...validatedData,
       invoice_number: validatedData.invoice_number ?? '',
       training_dates: validatedData.training_dates,

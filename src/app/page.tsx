@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrainingInvoice } from '@/lib/database';
+import { TrainingInvoice } from '@/lib/database.pg';
 import InvoiceList from '@/components/InvoiceList';
 import AdminTasksTable from '@/components/AdminTasksTable';
 import InvoiceForm from '@/components/InvoiceForm';

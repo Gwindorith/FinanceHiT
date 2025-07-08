@@ -10,27 +10,28 @@
     "db:setup": "node scripts/setup-database.js"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.2",
+    "@types/better-sqlite3": "^7.6.8",
+    "autoprefixer": "^10.4.16",
+    "better-sqlite3": "^9.2.2",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.294.0",
     "next": "14.0.0",
+    "pg": "^8.16.3",
+    "postcss": "^8.4.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sqlite3": "^5.1.6",
-    "better-sqlite3": "^9.2.2",
-    "@types/better-sqlite3": "^7.6.8",
-    "date-fns": "^2.30.0",
     "react-hook-form": "^7.48.2",
-    "zod": "^3.22.4",
-    "@hookform/resolvers": "^3.3.2",
-    "lucide-react": "^0.294.0",
+    "sqlite3": "^5.1.6",
     "tailwindcss": "^3.3.6",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.8.10",
     "@types/react": "^18.2.33",
     "@types/react-dom": "^18.2.14",
-    "typescript": "^5.2.2",
     "eslint": "^8.52.0",
-    "eslint-config-next": "14.0.0"
+    "eslint-config-next": "14.0.0",
+    "typescript": "^5.2.2"
   }
-} 
+}

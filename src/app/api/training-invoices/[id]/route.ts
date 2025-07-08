@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase, TrainingInvoice } from '@/lib/database';
+import { getTrainingInvoiceById, updateTrainingInvoice, deleteTrainingInvoice, calculateTotalAmount, TrainingInvoice } from '@/lib/database.pg';
 import { z } from 'zod';
 
 // Validation schema for updating training invoices
@@ -38,8 +38,7 @@ export async function GET(
       );
     }
 
-    const db = getDatabase();
-    const invoice = db.getTrainingInvoiceById(id);
+    const invoice = await getTrainingInvoiceById(id);
     
     if (!invoice) {
       return NextResponse.json(
@@ -76,8 +75,6 @@ export async function PUT(
     // Validate input
     const validatedData = TrainingInvoiceUpdateSchema.parse(body);
     
-    const db = getDatabase();
-    
     // Calculate duration as the number of unique dates if training_dates is updated
     let updateData: any = { ...validatedData };
     if (validatedData.training_dates !== undefined) {
@@ -91,7 +88,7 @@ export async function PUT(
       validatedData.office_costs !== undefined || 
       validatedData.margin_percentage !== undefined
     ) {
-      const current = db.getTrainingInvoiceById(id);
+      const current = await getTrainingInvoiceById(id);
       if (!current) {
         return NextResponse.json(
           { success: false, error: 'Training invoice not found' },
@@ -101,14 +98,14 @@ export async function PUT(
       const trainerCosts = validatedData.trainer_costs ?? current.trainer_costs;
       const officeCosts = validatedData.office_costs ?? current.office_costs;
       const marginPercentage = validatedData.margin_percentage ?? current.margin_percentage;
-      updateData.total_invoice_amount = db.calculateTotalAmount(
+      updateData.total_invoice_amount = calculateTotalAmount(
         trainerCosts,
         officeCosts,
         marginPercentage
       );
     }
     
-    const invoice = db.updateTrainingInvoice(id, updateData);
+    const invoice = await updateTrainingInvoice(id, updateData);
     
     if (!invoice) {
       return NextResponse.json(
@@ -148,8 +145,7 @@ export async function DELETE(
       );
     }
 
-    const db = getDatabase();
-    const deleted = db.deleteTrainingInvoice(id);
+    const deleted = await deleteTrainingInvoice(id);
     
     if (!deleted) {
       return NextResponse.json(

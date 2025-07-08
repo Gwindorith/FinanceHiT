@@ -1,4 +1,4 @@
-import { TrainingInvoice } from './database';
+import { TrainingInvoice } from './database.pg';
 import { InvoiceFilters } from '@/components/InvoiceFilters';
 import { AdminFilters } from '@/components/AdminFilters';
 
