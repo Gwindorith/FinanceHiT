@@ -228,6 +228,25 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
     }
   }, [watchedValues, setValue, dateFields, participantsCount, cateringOptions, roomRentOptions]);
 
+  // Handle participants count change from ParticipantsTable
+  const handleParticipantsChange = (count: number) => {
+    setParticipantsCount(count);
+    // Trigger recalculation immediately
+    const officeCosts = calculateOfficeCosts();
+    setCalculatedOfficeCosts(officeCosts);
+    setValue('office_costs', officeCosts);
+    
+    const trainerCosts = watch('trainer_costs');
+    const marginPercentage = watch('margin_percentage');
+    
+    if (trainerCosts !== undefined && marginPercentage !== undefined) {
+      const marginAmount = trainerCosts * (marginPercentage / 100);
+      const total = trainerCosts + officeCosts + marginAmount;
+      setCalculatedTotal(total);
+      setValue('total_invoice_amount', total);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
@@ -594,7 +613,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
       {activeTab === 'participants' && invoice?.id && (
         <ParticipantsTable 
           trainingInvoiceId={invoice.id} 
-          onParticipantsChange={setParticipantsCount}
+          onParticipantsChange={handleParticipantsChange}
         />
       )}
       {optionsModalOpen && selectedDayIndex !== null && (
