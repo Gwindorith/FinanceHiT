@@ -77,21 +77,6 @@ export function getSessionToken(): string | null {
   return cookieStore.get('session_token')?.value || null;
 }
 
-export function setSessionToken(token: string): void {
-  const cookieStore = cookies();
-  cookieStore.set('session_token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: SESSION_DURATION / 1000,
-  });
-}
-
-export function clearSessionToken(): void {
-  const cookieStore = cookies();
-  cookieStore.delete('session_token');
-}
-
 export function getCurrentUser(): User | null {
   const token = getSessionToken();
   if (!token) return null;
