@@ -2,32 +2,35 @@
 
 import { useState } from 'react';
 import { Search, Filter, X } from 'lucide-react';
+import MultiSelect from './MultiSelect';
 
 interface AdminFiltersProps {
   onFilterChange: (filters: AdminFilters) => void;
   customers: string[];
+  months: { value: string; label: string }[];
+  years: number[];
 }
 
 export interface AdminFilters {
   search: string;
   customer: string;
-  dateFrom: string;
-  dateTo: string;
+  months: string[];
+  years: number[];
   taskStatus: string;
 }
 
-export default function AdminFilters({ onFilterChange, customers }: AdminFiltersProps) {
+export default function AdminFilters({ onFilterChange, customers, months, years }: AdminFiltersProps) {
   const [filters, setFilters] = useState<AdminFilters>({
     search: '',
     customer: '',
-    dateFrom: '',
-    dateTo: '',
+    months: [],
+    years: [],
     taskStatus: '',
   });
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const handleFilterChange = (key: keyof AdminFilters, value: string) => {
+  const handleFilterChange = (key: keyof AdminFilters, value: string | string[] | number[]) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilterChange(newFilters);
@@ -37,15 +40,31 @@ export default function AdminFilters({ onFilterChange, customers }: AdminFilters
     const clearedFilters = {
       search: '',
       customer: '',
-      dateFrom: '',
-      dateTo: '',
+      months: [],
+      years: [],
       taskStatus: '',
     };
     setFilters(clearedFilters);
     onFilterChange(clearedFilters);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const hasActiveFilters = (() => {
+    return filters.search !== '' || 
+           filters.customer !== '' || 
+           filters.months.length > 0 || 
+           filters.years.length > 0 || 
+           filters.taskStatus !== '';
+  })();
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.search !== '') count++;
+    if (filters.customer !== '') count++;
+    if (filters.months.length > 0) count++;
+    if (filters.years.length > 0) count++;
+    if (filters.taskStatus !== '') count++;
+    return count;
+  };
 
   return (
     <div className="card mb-4">
@@ -73,7 +92,7 @@ export default function AdminFilters({ onFilterChange, customers }: AdminFilters
             Filters
             {hasActiveFilters && (
               <span className="ml-2 bg-primary-600 text-white text-xs rounded-full px-2 py-1">
-                {Object.values(filters).filter(v => v !== '').length}
+                {getActiveFilterCount()}
               </span>
             )}
           </button>
@@ -110,26 +129,22 @@ export default function AdminFilters({ onFilterChange, customers }: AdminFilters
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date From
-            </label>
-            <input
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 bg-white"
+            <MultiSelect
+              options={months}
+              value={filters.months}
+              onChange={(value) => handleFilterChange('months', value as string[])}
+              placeholder="Select months..."
+              label="Months"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date To
-            </label>
-            <input
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 bg-white"
+            <MultiSelect
+              options={years}
+              value={filters.years}
+              onChange={(value) => handleFilterChange('years', value as number[])}
+              placeholder="Select years..."
+              label="Years"
             />
           </div>
 

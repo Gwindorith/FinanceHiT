@@ -2,34 +2,37 @@
 
 import { useState } from 'react';
 import { Search, Filter, X } from 'lucide-react';
+import MultiSelect from './MultiSelect';
 
 interface InvoiceFiltersProps {
   onFilterChange: (filters: InvoiceFilters) => void;
   customers: string[];
+  months: { value: string; label: string }[];
+  years: number[];
 }
 
 export interface InvoiceFilters {
   search: string;
   customer: string;
-  dateFrom: string;
-  dateTo: string;
+  months: string[];
+  years: number[];
   minAmount: string;
   maxAmount: string;
 }
 
-export default function InvoiceFilters({ onFilterChange, customers }: InvoiceFiltersProps) {
+export default function InvoiceFilters({ onFilterChange, customers, months, years }: InvoiceFiltersProps) {
   const [filters, setFilters] = useState<InvoiceFilters>({
     search: '',
     customer: '',
-    dateFrom: '',
-    dateTo: '',
+    months: [],
+    years: [],
     minAmount: '',
     maxAmount: '',
   });
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const handleFilterChange = (key: keyof InvoiceFilters, value: string) => {
+  const handleFilterChange = (key: keyof InvoiceFilters, value: string | string[] | number[]) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilterChange(newFilters);
@@ -39,8 +42,8 @@ export default function InvoiceFilters({ onFilterChange, customers }: InvoiceFil
     const clearedFilters = {
       search: '',
       customer: '',
-      dateFrom: '',
-      dateTo: '',
+      months: [],
+      years: [],
       minAmount: '',
       maxAmount: '',
     };
@@ -48,7 +51,25 @@ export default function InvoiceFilters({ onFilterChange, customers }: InvoiceFil
     onFilterChange(clearedFilters);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const hasActiveFilters = (() => {
+    return filters.search !== '' || 
+           filters.customer !== '' || 
+           filters.months.length > 0 || 
+           filters.years.length > 0 || 
+           filters.minAmount !== '' || 
+           filters.maxAmount !== '';
+  })();
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.search !== '') count++;
+    if (filters.customer !== '') count++;
+    if (filters.months.length > 0) count++;
+    if (filters.years.length > 0) count++;
+    if (filters.minAmount !== '') count++;
+    if (filters.maxAmount !== '') count++;
+    return count;
+  };
 
   return (
     <div className="card mb-4">
@@ -76,7 +97,7 @@ export default function InvoiceFilters({ onFilterChange, customers }: InvoiceFil
             Filters
             {hasActiveFilters && (
               <span className="ml-2 bg-primary-600 text-white text-xs rounded-full px-2 py-1">
-                {Object.values(filters).filter(v => v !== '').length}
+                {getActiveFilterCount()}
               </span>
             )}
           </button>
@@ -113,26 +134,22 @@ export default function InvoiceFilters({ onFilterChange, customers }: InvoiceFil
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date From
-            </label>
-            <input
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 bg-white"
+            <MultiSelect
+              options={months}
+              value={filters.months}
+              onChange={(value) => handleFilterChange('months', value as string[])}
+              placeholder="Select months..."
+              label="Months"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date To
-            </label>
-            <input
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 bg-white"
+            <MultiSelect
+              options={years}
+              value={filters.years}
+              onChange={(value) => handleFilterChange('years', value as number[])}
+              placeholder="Select years..."
+              label="Years"
             />
           </div>
 

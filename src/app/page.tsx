@@ -7,7 +7,7 @@ import AdminTasksTable from '@/components/AdminTasksTable';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceFilters, { InvoiceFilters as InvoiceFiltersType } from '@/components/InvoiceFilters';
 import AdminFilters, { AdminFilters as AdminFiltersType } from '@/components/AdminFilters';
-import { filterInvoices, filterAdminTasks, getUniqueCustomers } from '@/lib/filterUtils';
+import { filterInvoices, filterAdminTasks, getUniqueCustomers, getAvailableMonths, getAvailableYears } from '@/lib/filterUtils';
 import { Plus, FileText, CheckSquare } from 'lucide-react';
 
 export default function Home() {
@@ -19,16 +19,16 @@ export default function Home() {
   const [invoiceFilters, setInvoiceFilters] = useState<InvoiceFiltersType>({
     search: '',
     customer: '',
-    dateFrom: '',
-    dateTo: '',
+    months: [],
+    years: [],
     minAmount: '',
     maxAmount: '',
   });
   const [adminFilters, setAdminFilters] = useState<AdminFiltersType>({
     search: '',
     customer: '',
-    dateFrom: '',
-    dateTo: '',
+    months: [],
+    years: [],
     taskStatus: '',
   });
 
@@ -71,14 +71,17 @@ export default function Home() {
 
   // Get unique customers for filter dropdowns
   const customers = getUniqueCustomers(invoices);
+  const months = getAvailableMonths(invoices);
+  const years = getAvailableYears(invoices);
 
   // Filter data based on active tab
   const filteredInvoices = activeTab === 'invoices' 
     ? filterInvoices(invoices, invoiceFilters)
     : filterAdminTasks(invoices, adminFilters);
 
-  const totalRevenue = invoices.reduce((sum, invoice) => sum + invoice.total_invoice_amount, 0);
-  const totalTrainings = invoices.length;
+  // Calculate totals based on filtered data
+  const totalRevenue = filteredInvoices.reduce((sum, invoice) => sum + invoice.total_invoice_amount, 0);
+  const totalTrainings = filteredInvoices.length;
 
   return (
     <div className="space-y-6">
@@ -192,6 +195,8 @@ export default function Home() {
               <InvoiceFilters
                 onFilterChange={setInvoiceFilters}
                 customers={customers}
+                months={months}
+                years={years}
               />
               <InvoiceList
                 invoices={filteredInvoices}
@@ -205,6 +210,8 @@ export default function Home() {
               <AdminFilters
                 onFilterChange={setAdminFilters}
                 customers={customers}
+                months={months}
+                years={years}
               />
               <AdminTasksTable
                 invoices={filteredInvoices}

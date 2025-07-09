@@ -20,20 +20,21 @@ export function filterInvoices(invoices: TrainingInvoice[], filters: InvoiceFilt
       return false;
     }
 
-    // Date range filter
-    if (filters.dateFrom || filters.dateTo) {
+    // Month filter
+    if (filters.months && filters.months.length > 0) {
       const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
+      if (!invoiceDate) return false;
       
-      if (filters.dateFrom && invoiceDate) {
-        const fromDate = new Date(filters.dateFrom);
-        if (invoiceDate < fromDate) return false;
-      }
+      const invoiceMonthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
+      if (!filters.months.includes(invoiceMonthKey)) return false;
+    }
+
+    // Year filter
+    if (filters.years && filters.years.length > 0) {
+      const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
+      if (!invoiceDate) return false;
       
-      if (filters.dateTo && invoiceDate) {
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        if (invoiceDate > toDate) return false;
-      }
+      if (!filters.years.includes(invoiceDate.getFullYear())) return false;
     }
 
     // Amount range filter
@@ -68,20 +69,21 @@ export function filterAdminTasks(invoices: TrainingInvoice[], filters: AdminFilt
       return false;
     }
 
-    // Date range filter (using first training date)
-    if (filters.dateFrom || filters.dateTo) {
+    // Month filter (using first training date)
+    if (filters.months && filters.months.length > 0) {
       const firstTrainingDate = invoice.training_dates?.[0]?.date ? new Date(invoice.training_dates[0].date) : null;
+      if (!firstTrainingDate) return false;
       
-      if (filters.dateFrom && firstTrainingDate) {
-        const fromDate = new Date(filters.dateFrom);
-        if (firstTrainingDate < fromDate) return false;
-      }
+      const trainingMonthKey = `${firstTrainingDate.getFullYear()}-${String(firstTrainingDate.getMonth() + 1).padStart(2, '0')}`;
+      if (!filters.months.includes(trainingMonthKey)) return false;
+    }
+
+    // Year filter (using first training date)
+    if (filters.years && filters.years.length > 0) {
+      const firstTrainingDate = invoice.training_dates?.[0]?.date ? new Date(invoice.training_dates[0].date) : null;
+      if (!firstTrainingDate) return false;
       
-      if (filters.dateTo && firstTrainingDate) {
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        if (firstTrainingDate > toDate) return false;
-      }
+      if (!filters.years.includes(firstTrainingDate.getFullYear())) return false;
     }
 
     // Task status filter
@@ -114,4 +116,63 @@ export function filterAdminTasks(invoices: TrainingInvoice[], filters: AdminFilt
 export function getUniqueCustomers(invoices: TrainingInvoice[]): string[] {
   const customers = invoices.map(invoice => invoice.customer);
   return Array.from(new Set(customers)).sort();
+}
+
+export function getAvailableMonths(invoices: TrainingInvoice[]): { value: string; label: string }[] {
+  const months = new Set<string>();
+  
+  invoices.forEach(invoice => {
+    // Check invoice date
+    if (invoice.invoice_date) {
+      const date = new Date(invoice.invoice_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthKey);
+    }
+    
+    // Check training dates
+    if (invoice.training_dates && invoice.training_dates.length > 0) {
+      invoice.training_dates.forEach(trainingDate => {
+        if (trainingDate.date) {
+          const date = new Date(trainingDate.date);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          months.add(monthKey);
+        }
+      });
+    }
+  });
+  
+  return Array.from(months)
+    .sort()
+    .map(monthKey => {
+      const [year, month] = monthKey.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return {
+        value: monthKey,
+        label: date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+      };
+    });
+}
+
+export function getAvailableYears(invoices: TrainingInvoice[]): number[] {
+  const years = new Set<number>();
+  
+  invoices.forEach(invoice => {
+    // Check invoice date
+    if (invoice.invoice_date) {
+      const date = new Date(invoice.invoice_date);
+      years.add(date.getFullYear());
+    }
+    
+    // Check training dates
+    if (invoice.training_dates && invoice.training_dates.length > 0) {
+      invoice.training_dates.forEach(trainingDate => {
+        if (trainingDate.date) {
+          const date = new Date(trainingDate.date);
+          years.add(date.getFullYear());
+        }
+      });
+    }
+  });
+  
+  return Array.from(years).sort((a, b) => b - a); // Sort descending
 } 

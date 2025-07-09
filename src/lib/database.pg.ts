@@ -174,6 +174,10 @@ function deserializeInvoice(row: any): TrainingInvoice {
   return {
     ...row,
     training_dates: typeof row.training_dates === 'string' ? JSON.parse(row.training_dates) : row.training_dates,
+    trainer_costs: Number(row.trainer_costs),
+    office_costs: Number(row.office_costs),
+    margin_percentage: Number(row.margin_percentage),
+    total_invoice_amount: Number(row.total_invoice_amount),
     trainer_availability_emailed: Boolean(row.trainer_availability_emailed),
     masterclass_planning_added: Boolean(row.masterclass_planning_added),
     lms_updated: Boolean(row.lms_updated),
