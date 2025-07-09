@@ -1,4 +1,19 @@
 {
+  "/_not-found": "app/_not-found.js",
+  "/api/auth/session/route": "app/api/auth/session/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/init/route": "app/api/init/route.js",
+  "/api/participants/[id]/route": "app/api/participants/[id]/route.js",
+  "/api/training-invoices/[id]/route": "app/api/training-invoices/[id]/route.js",
+  "/api/participants/route": "app/api/participants/route.js",
+  "/api/training-invoices/route": "app/api/training-invoices/route.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/api/init/route": "app/api/init/route.js"
+  "/api/catering-options/route": "app/api/catering-options/route.js",
+  "/api/catering-options/[id]/route": "app/api/catering-options/[id]/route.js",
+  "/api/training-room-rent-options/route": "app/api/training-room-rent-options/route.js",
+  "/api/training-room-rent-options/[id]/route": "app/api/training-room-rent-options/[id]/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/api/users/[id]/route": "app/api/users/[id]/route.js"
 }
