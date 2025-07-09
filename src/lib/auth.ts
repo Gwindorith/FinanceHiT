@@ -40,7 +40,7 @@ export const DEFAULT_ADMIN_USER = {
   updated_at: new Date().toISOString(),
 };
 
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, 10);
