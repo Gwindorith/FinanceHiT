@@ -9,9 +9,10 @@ interface Participant {
 
 interface ParticipantsTableProps {
   trainingInvoiceId: number;
+  onParticipantsChange?: (count: number) => void;
 }
 
-export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTableProps) {
+export default function ParticipantsTable({ trainingInvoiceId, onParticipantsChange }: ParticipantsTableProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTab
       const data = await res.json();
       if (data.success) {
         setParticipants(data.data);
+        onParticipantsChange?.(data.data.length);
       } else {
         setError(data.error || 'Failed to fetch participants');
       }
@@ -52,7 +54,9 @@ export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTab
       });
       const data = await res.json();
       if (data.success) {
-        setParticipants([...participants, data.data]);
+        const updatedParticipants = [...participants, data.data];
+        setParticipants(updatedParticipants);
+        onParticipantsChange?.(updatedParticipants.length);
         setNewParticipant({ name: '', email: '', company: '' });
       } else {
         setError(data.error || 'Failed to add participant');
@@ -93,7 +97,9 @@ export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTab
       const res = await fetch(`/api/participants/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setParticipants(participants.filter(p => p.id !== id));
+        const updatedParticipants = participants.filter(p => p.id !== id);
+        setParticipants(updatedParticipants);
+        onParticipantsChange?.(updatedParticipants.length);
       } else {
         setError(data.error || 'Failed to delete participant');
       }
@@ -133,6 +139,7 @@ export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTab
         />
         <button type="submit" className="btn-primary">Add</button>
       </form>
+      
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -183,7 +190,7 @@ export default function ParticipantsTable({ trainingInvoiceId }: ParticipantsTab
                     />
                   ) : p.company}
                 </td>
-                <td className="px-4 py-2 text-right text-black">
+                <td className="px-4 py-2 text-right">
                   {editingId === p.id ? (
                     <>
                       <button className="btn-primary mr-2" onClick={() => handleEditSave(p.id!)}>Save</button>

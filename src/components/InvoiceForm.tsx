@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { TrainingInvoice } from '@/lib/database.pg';
+import { TrainingInvoice, CateringOption, TrainingRoomRentOption } from '@/lib/database.pg';
 import ParticipantsTable from './ParticipantsTable';
 import TrainingDayOptionsModal from './TrainingDayOptionsModal';
 
@@ -56,7 +56,11 @@ interface InvoiceFormProps {
 export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calculatedTotal, setCalculatedTotal] = useState(0);
+  const [calculatedOfficeCosts, setCalculatedOfficeCosts] = useState(0);
   const [duration, setDuration] = useState(1);
+  const [participantsCount, setParticipantsCount] = useState(0);
+  const [cateringOptions, setCateringOptions] = useState<CateringOption[]>([]);
+  const [roomRentOptions, setRoomRentOptions] = useState<TrainingRoomRentOption[]>([]);
   const [dateFields, setDateFields] = useState<Array<{
     date: string;
     start_time: string;
@@ -113,6 +117,46 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
     },
   });
 
+  // Fetch options data
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [cateringResponse, roomResponse] = await Promise.all([
+          fetch('/api/catering-options'),
+          fetch('/api/training-room-rent-options')
+        ]);
+        
+        const cateringData = await cateringResponse.json();
+        const roomData = await roomResponse.json();
+        
+        if (cateringData.success) setCateringOptions(cateringData.data);
+        if (roomData.success) setRoomRentOptions(roomData.data);
+      } catch (error) {
+        console.error('Failed to fetch options:', error);
+      }
+    };
+    
+    fetchOptions();
+  }, []);
+
+  // Fetch participants count if editing existing invoice
+  useEffect(() => {
+    if (invoice?.id) {
+      const fetchParticipants = async () => {
+        try {
+          const response = await fetch(`/api/participants?training_invoice_id=${invoice.id}`);
+          const data = await response.json();
+          if (data.success) {
+            setParticipantsCount(data.data.length);
+          }
+        } catch (error) {
+          console.error('Failed to fetch participants:', error);
+        }
+      };
+      fetchParticipants();
+    }
+  }, [invoice?.id]);
+
   // Sync dateFields with form value
   useEffect(() => {
     setValue('training_dates', dateFields);
@@ -125,23 +169,64 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
     }
   }, [dateFields]);
 
-  // Watch form values for automatic calculations
-  const watchedValues = watch(['training_dates', 'trainer_costs', 'office_costs', 'margin_percentage']);
+  // Calculate office costs based on room rent and catering
+  const calculateOfficeCosts = () => {
+    let totalOfficeCosts = 0;
 
-  // Calculate duration and total amount when relevant fields change
+    dateFields.forEach(dateField => {
+      // Calculate room rent costs
+      if (dateField.room_rent_option_id) {
+        const roomOption = roomRentOptions.find(r => r.id === dateField.room_rent_option_id);
+        if (roomOption) {
+          const startTime = new Date(`2000-01-01T${dateField.start_time}`);
+          const endTime = new Date(`2000-01-01T${dateField.end_time}`);
+          const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          totalOfficeCosts += hoursDiff * roomOption.rent_per_hour;
+        }
+      }
+
+      // Calculate catering costs
+      if (dateField.lunch_catering_option_id) {
+        const lunchOption = cateringOptions.find(c => c.id === dateField.lunch_catering_option_id);
+        if (lunchOption) {
+          totalOfficeCosts += participantsCount * lunchOption.lunch_price_per_participant;
+        }
+      }
+
+      if (dateField.dinner_catering_option_id) {
+        const dinnerOption = cateringOptions.find(c => c.id === dateField.dinner_catering_option_id);
+        if (dinnerOption) {
+          totalOfficeCosts += participantsCount * dinnerOption.dinner_price_per_participant;
+        }
+      }
+    });
+
+    return totalOfficeCosts;
+  };
+
+  // Watch form values for automatic calculations
+  const watchedValues = watch(['training_dates', 'trainer_costs', 'margin_percentage']);
+
+  // Calculate duration, office costs and total amount when relevant fields change
   useEffect(() => {
-    const [trainingDates, trainerCosts, officeCosts, marginPercentage] = watchedValues;
+    const [trainingDates, trainerCosts, marginPercentage] = watchedValues;
     if (Array.isArray(trainingDates)) {
       const uniqueDates = Array.from(new Set(trainingDates.filter(d => d.date).map(d => d.date)));
       setDuration(uniqueDates.length);
     }
-    if (trainerCosts !== undefined && officeCosts !== undefined && marginPercentage !== undefined) {
+    
+    // Calculate office costs
+    const officeCosts = calculateOfficeCosts();
+    setCalculatedOfficeCosts(officeCosts);
+    setValue('office_costs', officeCosts);
+    
+    if (trainerCosts !== undefined && marginPercentage !== undefined) {
       const marginAmount = trainerCosts * (marginPercentage / 100);
       const total = trainerCosts + officeCosts + marginAmount;
       setCalculatedTotal(total);
       setValue('total_invoice_amount', total);
     }
-  }, [watchedValues, setValue]);
+  }, [watchedValues, setValue, dateFields, participantsCount, cateringOptions, roomRentOptions]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -209,6 +294,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
           </button>
         )}
       </div>
+      
       {activeTab === 'details' && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -260,7 +346,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
             </div>
 
             {/* Training Name */}
-            <div className="md:col-span-2">
+            <div>
               <label htmlFor="training_name" className="block text-sm font-medium text-gray-700">
                 Training Name *
               </label>
@@ -382,6 +468,24 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
               />
             </div>
 
+            {/* Participants Count (for existing invoices) */}
+            {invoice?.id && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Participants Count
+                </label>
+                <input
+                  type="number"
+                  value={participantsCount}
+                  readOnly
+                  className="input-field mt-1 bg-gray-50 text-black"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Add participants in the Participants tab
+                </p>
+              </div>
+            )}
+
             {/* Margin Percentage */}
             <div>
               <label htmlFor="margin_percentage" className="block text-sm font-medium text-gray-700">
@@ -420,7 +524,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
               )}
             </div>
 
-            {/* Office Costs */}
+            {/* Office Costs (Calculated) */}
             <div>
               <label htmlFor="office_costs" className="block text-sm font-medium text-gray-700">
                 Office Costs (€) *
@@ -429,11 +533,15 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
                 type="number"
                 id="office_costs"
                 {...register('office_costs', { valueAsNumber: true })}
-                className="input-field mt-1 text-black"
+                className="input-field mt-1 bg-gray-50 text-black"
                 min="0"
                 step="0.01"
                 placeholder="0.00"
+                readOnly
               />
+              <p className="mt-1 text-sm text-gray-500">
+                Calculated from room rent and catering options
+              </p>
               {errors.office_costs && (
                 <p className="mt-1 text-sm text-red-600">{errors.office_costs.message}</p>
               )}
@@ -484,7 +592,10 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
         </form>
       )}
       {activeTab === 'participants' && invoice?.id && (
-        <ParticipantsTable trainingInvoiceId={invoice.id} />
+        <ParticipantsTable 
+          trainingInvoiceId={invoice.id} 
+          onParticipantsChange={setParticipantsCount}
+        />
       )}
       {optionsModalOpen && selectedDayIndex !== null && (
         <TrainingDayOptionsModal
