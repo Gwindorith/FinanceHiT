@@ -258,7 +258,7 @@ export default function UserManagement({ onClose }: UserManagementProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button 
@@ -269,7 +269,7 @@ export default function UserManagement({ onClose }: UserManagementProps) {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button 
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => user.id && handleDeleteUser(user.id)}
                         className={`${
                           user.id === 1 
                             ? 'text-gray-400 cursor-not-allowed' 
