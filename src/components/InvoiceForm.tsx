@@ -245,6 +245,63 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
       setCalculatedTotal(total);
       setValue('total_invoice_amount', total);
     }
+
+    // Auto-save the invoice if it exists
+    if (invoice?.id) {
+      autoSaveInvoice();
+    }
+  };
+
+  // Auto-save function to persist changes immediately
+  const autoSaveInvoice = async () => {
+    if (!invoice?.id) return;
+    
+    try {
+      const formData = watch();
+      const updatedData = {
+        ...formData,
+        training_dates: dateFields,
+        office_costs: calculateOfficeCosts(),
+        total_invoice_amount: calculatedTotal,
+      };
+
+      const response = await fetch(`/api/training-invoices/${invoice.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        console.log('Invoice auto-saved successfully');
+      } else {
+        console.error('Auto-save failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  };
+
+  const handleSaveOptions = (options: {
+    room_rent_option_id: number | null;
+    lunch_catering_option_id: number | null;
+    dinner_catering_option_id: number | null;
+  }) => {
+    if (selectedDayIndex !== null) {
+      const newDates = [...dateFields];
+      newDates[selectedDayIndex] = { ...newDates[selectedDayIndex], ...options };
+      setDateFields(newDates);
+      
+      // Auto-save the invoice if it exists
+      if (invoice?.id) {
+        // Use setTimeout to ensure state is updated before auto-saving
+        setTimeout(() => {
+          autoSaveInvoice();
+        }, 100);
+      }
+    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -281,18 +338,6 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
   const handleOpenOptionsModal = (index: number) => {
     setSelectedDayIndex(index);
     setOptionsModalOpen(true);
-  };
-
-  const handleSaveOptions = (options: {
-    room_rent_option_id: number | null;
-    lunch_catering_option_id: number | null;
-    dinner_catering_option_id: number | null;
-  }) => {
-    if (selectedDayIndex !== null) {
-      const newDates = [...dateFields];
-      newDates[selectedDayIndex] = { ...newDates[selectedDayIndex], ...options };
-      setDateFields(newDates);
-    }
   };
 
   return (
@@ -396,6 +441,10 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
                         const newDates = [...dateFields];
                         newDates[idx] = { ...newDates[idx], date: e.target.value };
                         setDateFields(newDates);
+                        // Auto-save if invoice exists
+                        if (invoice?.id) {
+                          setTimeout(() => autoSaveInvoice(), 100);
+                        }
                       }}
                       className="input-field text-black"
                     />
@@ -408,6 +457,10 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
                           const newDates = [...dateFields];
                           newDates[idx] = { ...newDates[idx], start_time: e.target.value };
                           setDateFields(newDates);
+                          // Auto-save if invoice exists
+                          if (invoice?.id) {
+                            setTimeout(() => autoSaveInvoice(), 100);
+                          }
                         }}
                         className="input-field text-black w-28"
                         step="900"
@@ -426,6 +479,10 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
                           const newDates = [...dateFields];
                           newDates[idx] = { ...newDates[idx], end_time: e.target.value };
                           setDateFields(newDates);
+                          // Auto-save if invoice exists
+                          if (invoice?.id) {
+                            setTimeout(() => autoSaveInvoice(), 100);
+                          }
                         }}
                         className="input-field text-black w-28"
                         step="900"
