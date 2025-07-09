@@ -40,7 +40,7 @@ body {
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900;
   }
   
   .card {
@@ -51,4 +51,14 @@ body {
   input[type="time"] {
     @apply font-mono;
   }
+}
+
+/* Ensure all input fields have black text */
+input, textarea, select {
+  @apply text-gray-900;
+}
+
+/* Ensure input placeholders are visible */
+input::placeholder, textarea::placeholder {
+  @apply text-gray-500;
 } 

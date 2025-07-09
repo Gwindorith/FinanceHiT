@@ -36,6 +36,17 @@ export interface Participant {
   company: string;
 }
 
+export interface User {
+  id?: number;
+  username: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'user' | 'manager';
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
@@ -185,4 +196,93 @@ function deserializeInvoice(row: any): TrainingInvoice {
     catering_ordered: Boolean(row.catering_ordered),
     trainer_invoice_received: Boolean(row.trainer_invoice_received),
   };
+}
+
+// User management functions
+export async function getAllUsers(): Promise<Omit<User, 'password'>[]> {
+  const res = await pool.query('SELECT id, username, email, role, name, created_at, updated_at FROM users ORDER BY created_at DESC');
+  return res.rows;
+}
+
+export async function getUserById(id: number): Promise<Omit<User, 'password'> | undefined> {
+  const res = await pool.query('SELECT id, username, email, role, name, created_at, updated_at FROM users WHERE id = $1', [id]);
+  return res.rows[0];
+}
+
+export async function getUserByUsername(username: string): Promise<User | undefined> {
+  const res = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+  return res.rows[0];
+}
+
+export async function createUser(user: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<Omit<User, 'password'>> {
+  const res = await pool.query(
+    'INSERT INTO users (username, email, password, role, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, role, name, created_at, updated_at',
+    [user.username, user.email, user.password, user.role, user.name]
+  );
+  return res.rows[0];
+}
+
+export async function updateUser(id: number, user: Partial<Omit<User, 'id' | 'password' | 'created_at' | 'updated_at'>>): Promise<Omit<User, 'password'> | undefined> {
+  const current = await getUserById(id);
+  if (!current) return undefined;
+
+  const fields = [];
+  const values = [];
+  let paramCount = 1;
+
+  if (user.username !== undefined) {
+    fields.push(`username = $${paramCount++}`);
+    values.push(user.username);
+  }
+  if (user.email !== undefined) {
+    fields.push(`email = $${paramCount++}`);
+    values.push(user.email);
+  }
+  if (user.role !== undefined) {
+    fields.push(`role = $${paramCount++}`);
+    values.push(user.role);
+  }
+  if (user.name !== undefined) {
+    fields.push(`name = $${paramCount++}`);
+    values.push(user.name);
+  }
+
+  if (fields.length === 0) return current;
+
+  fields.push(`updated_at = NOW()`);
+  values.push(id);
+
+  const res = await pool.query(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING id, username, email, role, name, created_at, updated_at`,
+    values
+  );
+  return res.rows[0];
+}
+
+export async function updateUserPassword(id: number, password: string): Promise<boolean> {
+  const res = await pool.query('UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2', [password, id]);
+  return (res.rowCount ?? 0) > 0;
+}
+
+export async function deleteUser(id: number): Promise<boolean> {
+  const res = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+  return (res.rowCount ?? 0) > 0;
+}
+
+export async function initializeDefaultAdmin(): Promise<void> {
+  // Check if admin user already exists
+  const existingAdmin = await getUserByUsername('admin');
+  if (existingAdmin) return;
+
+  // Create default admin user
+  const bcrypt = require('bcrypt');
+  const hashedPassword = await bcrypt.hash('admin', 10);
+  
+  await createUser({
+    username: 'admin',
+    email: 'admin@example.com',
+    password: hashedPassword,
+    role: 'admin',
+    name: 'Administrator',
+  });
 } 

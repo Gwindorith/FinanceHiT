@@ -8,12 +8,18 @@ import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceFilters, { InvoiceFilters as InvoiceFiltersType } from '@/components/InvoiceFilters';
 import AdminFilters, { AdminFilters as AdminFiltersType } from '@/components/AdminFilters';
 import { filterInvoices, filterAdminTasks, getUniqueCustomers, getAvailableMonths, getAvailableYears } from '@/lib/filterUtils';
-import { Plus, FileText, CheckSquare } from 'lucide-react';
+import { Plus, FileText, CheckSquare, LogOut, User, Users } from 'lucide-react';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
+import UserManagement from '@/components/UserManagement';
+import LoginForm from '@/components/LoginForm';
 
 export default function Home() {
+  const { user, logout } = useAuth();
   const [invoices, setInvoices] = useState<TrainingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'invoices' | 'admin'>('invoices');
   const [invoiceFilters, setInvoiceFilters] = useState<InvoiceFiltersType>({
@@ -83,10 +89,55 @@ export default function Home() {
   const totalRevenue = filteredInvoices.reduce((sum, invoice) => sum + invoice.total_invoice_amount, 0);
   const totalTrainings = filteredInvoices.length;
 
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!user) {
+    return <LoginForm />;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* User Header */}
+        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary-100 rounded-full">
+              <User className="h-5 w-5 text-primary-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setShowUserManagement(true)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <Users className="h-4 w-4" />
+                <span>Users</span>
+              </button>
+            )}
+            <button
+              onClick={logout}
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -130,17 +181,19 @@ export default function Home() {
               <FileText className="h-4 w-4 inline mr-2" />
               Invoices
             </button>
-            <button
-              className={`px-4 py-2 -mb-px border-b-2 font-medium text-sm focus:outline-none ${
-                activeTab === 'admin' 
-                  ? 'border-primary-600 text-primary-700' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('admin')}
-            >
-              <CheckSquare className="h-4 w-4 inline mr-2" />
-              Administrative Tasks
-            </button>
+            {user?.role === 'admin' && (
+              <button
+                className={`px-4 py-2 -mb-px border-b-2 font-medium text-sm focus:outline-none ${
+                  activeTab === 'admin' 
+                    ? 'border-primary-600 text-primary-700' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveTab('admin')}
+              >
+                <CheckSquare className="h-4 w-4 inline mr-2" />
+                Administrative Tasks
+              </button>
+            )}
           </div>
         </div>
         <button
@@ -205,7 +258,7 @@ export default function Home() {
               />
             </>
           )}
-          {activeTab === 'admin' && (
+          {activeTab === 'admin' && user?.role === 'admin' && (
             <>
               <AdminFilters
                 onFilterChange={setAdminFilters}
@@ -221,6 +274,11 @@ export default function Home() {
           )}
         </>
       )}
-    </div>
+
+      {/* User Management Modal */}
+      {showUserManagement && (
+        <UserManagement onClose={() => setShowUserManagement(false)} />
+      )}
+      </div>
   );
 } 
