@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
 
 export interface TrainingDate {
   date: string;
@@ -299,7 +300,6 @@ export async function initializeDefaultAdmin(): Promise<void> {
   if (existingAdmin) return;
 
   // Create default admin user
-  const bcrypt = require('bcrypt');
   const hashedPassword = await bcrypt.hash('admin', 10);
   
   await createUser({
