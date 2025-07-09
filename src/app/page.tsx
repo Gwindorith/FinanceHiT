@@ -8,10 +8,11 @@ import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceFilters, { InvoiceFilters as InvoiceFiltersType } from '@/components/InvoiceFilters';
 import AdminFilters, { AdminFilters as AdminFiltersType } from '@/components/AdminFilters';
 import { filterInvoices, filterAdminTasks, getUniqueCustomers, getAvailableMonths, getAvailableYears } from '@/lib/filterUtils';
-import { Plus, FileText, CheckSquare, LogOut, User, Users } from 'lucide-react';
+import { Plus, FileText, CheckSquare, LogOut, User, Users, Building2 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import UserManagement from '@/components/UserManagement';
+import OfficeManagement from '@/components/OfficeManagement';
 import LoginForm from '@/components/LoginForm';
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showOfficeManagement, setShowOfficeManagement] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'invoices' | 'admin'>('invoices');
   const [invoiceFilters, setInvoiceFilters] = useState<InvoiceFiltersType>({
@@ -117,6 +119,15 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {(user?.role === 'admin' || user?.role === 'manager') && (
+              <button
+                onClick={() => setShowOfficeManagement(true)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <Building2 className="h-4 w-4" />
+                <span>Office</span>
+              </button>
+            )}
             {user?.role === 'admin' && (
               <button
                 onClick={() => setShowUserManagement(true)}
@@ -278,6 +289,11 @@ export default function Home() {
       {/* User Management Modal */}
       {showUserManagement && (
         <UserManagement onClose={() => setShowUserManagement(false)} />
+      )}
+
+      {/* Office Management Modal */}
+      {showOfficeManagement && (
+        <OfficeManagement onClose={() => setShowOfficeManagement(false)} />
       )}
       </div>
   );

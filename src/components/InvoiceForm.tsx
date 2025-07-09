@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { TrainingInvoice } from '@/lib/database.pg';
 import ParticipantsTable from './ParticipantsTable';
+import TrainingDayOptionsModal from './TrainingDayOptionsModal';
 
 // Form validation schema
 const InvoiceFormSchema = z.object({
@@ -17,6 +18,9 @@ const InvoiceFormSchema = z.object({
     date: z.string().min(1, 'Date is required'),
     start_time: z.string().min(1, 'Start time is required'),
     end_time: z.string().min(1, 'End time is required'),
+    room_rent_option_id: z.number().nullable().optional(),
+    lunch_catering_option_id: z.number().nullable().optional(),
+    dinner_catering_option_id: z.number().nullable().optional(),
   })).min(1, 'At least one date is required'),
   trainer_costs: z.number().min(0, 'Trainer costs must be non-negative'),
   office_costs: z.number().min(0, 'Office costs must be non-negative'),
@@ -33,6 +37,9 @@ type FormData = {
     date: string;
     start_time: string;
     end_time: string;
+    room_rent_option_id: number | null;
+    lunch_catering_option_id: number | null;
+    dinner_catering_option_id: number | null;
   }>;
   trainer_costs: number;
   office_costs: number;
@@ -50,10 +57,26 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calculatedTotal, setCalculatedTotal] = useState(0);
   const [duration, setDuration] = useState(1);
-  const [dateFields, setDateFields] = useState<Array<{date: string; start_time: string; end_time: string}>>(
-    invoice ? invoice.training_dates : [{ date: '', start_time: '09:00', end_time: '17:00' }]
+  const [dateFields, setDateFields] = useState<Array<{
+    date: string;
+    start_time: string;
+    end_time: string;
+    room_rent_option_id: number | null;
+    lunch_catering_option_id: number | null;
+    dinner_catering_option_id: number | null;
+  }>>(
+    invoice ? invoice.training_dates.map(d => ({
+      date: d.date,
+      start_time: d.start_time,
+      end_time: d.end_time,
+      room_rent_option_id: d.room_rent_option_id ?? null,
+      lunch_catering_option_id: d.lunch_catering_option_id ?? null,
+      dinner_catering_option_id: d.dinner_catering_option_id ?? null,
+    })) : [{ date: '', start_time: '09:00', end_time: '17:00', room_rent_option_id: null, lunch_catering_option_id: null, dinner_catering_option_id: null }]
   );
   const [activeTab, setActiveTab] = useState<'details' | 'participants'>('details');
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false);
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
   // Debug: log dateFields
   console.log('Training Dates:', dateFields);
@@ -82,7 +105,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
       invoice_date: '',
       customer: '',
       training_name: '',
-      training_dates: [{ date: '', start_time: '09:00', end_time: '17:00' }],
+      training_dates: [{ date: '', start_time: '09:00', end_time: '17:00', room_rent_option_id: null, lunch_catering_option_id: null, dinner_catering_option_id: null }],
       trainer_costs: 0,
       office_costs: 0,
       margin_percentage: 25,
@@ -98,7 +121,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
   // Always ensure at least one date field is present
   useEffect(() => {
     if (dateFields.length === 0) {
-      setDateFields([{ date: '', start_time: '09:00', end_time: '17:00' }]);
+      setDateFields([{ date: '', start_time: '09:00', end_time: '17:00', room_rent_option_id: null, lunch_catering_option_id: null, dinner_catering_option_id: null }]);
     }
   }, [dateFields]);
 
@@ -148,6 +171,23 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
       alert('Failed to save invoice');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenOptionsModal = (index: number) => {
+    setSelectedDayIndex(index);
+    setOptionsModalOpen(true);
+  };
+
+  const handleSaveOptions = (options: {
+    room_rent_option_id: number | null;
+    lunch_catering_option_id: number | null;
+    dinner_catering_option_id: number | null;
+  }) => {
+    if (selectedDayIndex !== null) {
+      const newDates = [...dateFields];
+      newDates[selectedDayIndex] = { ...newDates[selectedDayIndex], ...options };
+      setDateFields(newDates);
     }
   };
 
@@ -290,6 +330,14 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
                         lang="en"
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenOptionsModal(idx)}
+                      className="btn-secondary text-sm px-3 py-1"
+                    >
+                      Configure Options
+                    </button>
                     <button
                       type="button"
                       onClick={() => setDateFields(dateFields.filter((_, i) => i !== idx))}
@@ -305,7 +353,7 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
               <div className="mt-2">
                 <button
                   type="button"
-                  onClick={() => setDateFields([...dateFields, { date: '', start_time: '09:00', end_time: '17:00' }])}
+                  onClick={() => setDateFields([...dateFields, { date: '', start_time: '09:00', end_time: '17:00', room_rent_option_id: null, lunch_catering_option_id: null, dinner_catering_option_id: null }])}
                   className="btn-primary text-sm px-3 py-1"
                   title="Add training date"
                 >
@@ -437,6 +485,14 @@ export default function InvoiceForm({ invoice, onSuccess, onCancel }: InvoiceFor
       )}
       {activeTab === 'participants' && invoice?.id && (
         <ParticipantsTable trainingInvoiceId={invoice.id} />
+      )}
+      {optionsModalOpen && selectedDayIndex !== null && (
+        <TrainingDayOptionsModal
+          isOpen={optionsModalOpen}
+          onClose={() => setOptionsModalOpen(false)}
+          trainingDay={dateFields[selectedDayIndex]}
+          onSave={handleSaveOptions}
+        />
       )}
     </div>
   );

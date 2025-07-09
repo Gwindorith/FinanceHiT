@@ -4,6 +4,9 @@ export interface TrainingDate {
   date: string;
   start_time: string;
   end_time: string;
+  room_rent_option_id?: number | null;
+  lunch_catering_option_id?: number | null;
+  dinner_catering_option_id?: number | null;
 }
 
 export interface TrainingInvoice {
@@ -43,6 +46,27 @@ export interface User {
   password: string;
   role: 'admin' | 'user' | 'manager';
   name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CateringOption {
+  id?: number;
+  name: string;
+  description?: string;
+  lunch_price_per_participant: number;
+  dinner_price_per_participant: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TrainingRoomRentOption {
+  id?: number;
+  name: string;
+  description?: string;
+  rent_per_hour: number;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -285,4 +309,182 @@ export async function initializeDefaultAdmin(): Promise<void> {
     role: 'admin',
     name: 'Administrator',
   });
+}
+
+// Catering options management functions
+export async function getAllCateringOptions(): Promise<CateringOption[]> {
+  const res = await pool.query('SELECT * FROM catering_options ORDER BY name ASC');
+  return res.rows.map(row => ({
+    ...row,
+    lunch_price_per_participant: Number(row.lunch_price_per_participant),
+    dinner_price_per_participant: Number(row.dinner_price_per_participant),
+    is_active: Boolean(row.is_active),
+  }));
+}
+
+export async function getCateringOptionById(id: number): Promise<CateringOption | undefined> {
+  const res = await pool.query('SELECT * FROM catering_options WHERE id = $1', [id]);
+  if (!res.rows[0]) return undefined;
+  
+  const row = res.rows[0];
+  return {
+    ...row,
+    lunch_price_per_participant: Number(row.lunch_price_per_participant),
+    dinner_price_per_participant: Number(row.dinner_price_per_participant),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function createCateringOption(cateringOption: Omit<CateringOption, 'id' | 'created_at' | 'updated_at'>): Promise<CateringOption> {
+  const res = await pool.query(
+    'INSERT INTO catering_options (name, description, lunch_price_per_participant, dinner_price_per_participant, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [
+      cateringOption.name,
+      cateringOption.description || '',
+      cateringOption.lunch_price_per_participant,
+      cateringOption.dinner_price_per_participant,
+      cateringOption.is_active ?? true,
+    ]
+  );
+  
+  const row = res.rows[0];
+  return {
+    ...row,
+    lunch_price_per_participant: Number(row.lunch_price_per_participant),
+    dinner_price_per_participant: Number(row.dinner_price_per_participant),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function updateCateringOption(id: number, cateringOption: Partial<Omit<CateringOption, 'id' | 'created_at' | 'updated_at'>>): Promise<CateringOption | undefined> {
+  const current = await getCateringOptionById(id);
+  if (!current) return undefined;
+
+  const fields = [];
+  const values = [];
+  let paramCount = 1;
+
+  if (cateringOption.name !== undefined) {
+    fields.push(`name = $${paramCount++}`);
+    values.push(cateringOption.name);
+  }
+  if (cateringOption.description !== undefined) {
+    fields.push(`description = $${paramCount++}`);
+    values.push(cateringOption.description);
+  }
+  if (cateringOption.lunch_price_per_participant !== undefined) {
+    fields.push(`lunch_price_per_participant = $${paramCount++}`);
+    values.push(cateringOption.lunch_price_per_participant);
+  }
+  if (cateringOption.dinner_price_per_participant !== undefined) {
+    fields.push(`dinner_price_per_participant = $${paramCount++}`);
+    values.push(cateringOption.dinner_price_per_participant);
+  }
+  if (cateringOption.is_active !== undefined) {
+    fields.push(`is_active = $${paramCount++}`);
+    values.push(cateringOption.is_active);
+  }
+
+  if (fields.length === 0) return current;
+
+  fields.push(`updated_at = NOW()`);
+  values.push(id);
+
+  const res = await pool.query(
+    `UPDATE catering_options SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+    values
+  );
+  
+  const row = res.rows[0];
+  return {
+    ...row,
+    lunch_price_per_participant: Number(row.lunch_price_per_participant),
+    dinner_price_per_participant: Number(row.dinner_price_per_participant),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function deleteCateringOption(id: number): Promise<boolean> {
+  const res = await pool.query('DELETE FROM catering_options WHERE id = $1', [id]);
+  return (res.rowCount ?? 0) > 0;
+} 
+
+export async function getAllTrainingRoomRentOptions(): Promise<TrainingRoomRentOption[]> {
+  const res = await pool.query('SELECT * FROM training_room_rent_options ORDER BY name ASC');
+  return res.rows.map(row => ({
+    ...row,
+    rent_per_hour: Number(row.rent_per_hour),
+    is_active: Boolean(row.is_active),
+  }));
+}
+
+export async function getTrainingRoomRentOptionById(id: number): Promise<TrainingRoomRentOption | undefined> {
+  const res = await pool.query('SELECT * FROM training_room_rent_options WHERE id = $1', [id]);
+  if (!res.rows[0]) return undefined;
+  const row = res.rows[0];
+  return {
+    ...row,
+    rent_per_hour: Number(row.rent_per_hour),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function createTrainingRoomRentOption(option: Omit<TrainingRoomRentOption, 'id' | 'created_at' | 'updated_at'>): Promise<TrainingRoomRentOption> {
+  const res = await pool.query(
+    'INSERT INTO training_room_rent_options (name, description, rent_per_hour, is_active) VALUES ($1, $2, $3, $4) RETURNING *',
+    [
+      option.name,
+      option.description || '',
+      option.rent_per_hour,
+      option.is_active ?? true,
+    ]
+  );
+  const row = res.rows[0];
+  return {
+    ...row,
+    rent_per_hour: Number(row.rent_per_hour),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function updateTrainingRoomRentOption(id: number, option: Partial<Omit<TrainingRoomRentOption, 'id' | 'created_at' | 'updated_at'>>): Promise<TrainingRoomRentOption | undefined> {
+  const current = await getTrainingRoomRentOptionById(id);
+  if (!current) return undefined;
+  const fields = [];
+  const values = [];
+  let paramCount = 1;
+  if (option.name !== undefined) {
+    fields.push(`name = $${paramCount++}`);
+    values.push(option.name);
+  }
+  if (option.description !== undefined) {
+    fields.push(`description = $${paramCount++}`);
+    values.push(option.description);
+  }
+  if (option.rent_per_hour !== undefined) {
+    fields.push(`rent_per_hour = $${paramCount++}`);
+    values.push(option.rent_per_hour);
+  }
+  if (option.is_active !== undefined) {
+    fields.push(`is_active = $${paramCount++}`);
+    values.push(option.is_active);
+  }
+  if (fields.length === 0) return current;
+  fields.push(`updated_at = NOW()`);
+  values.push(id);
+  const res = await pool.query(
+    `UPDATE training_room_rent_options SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+    values
+  );
+  const row = res.rows[0];
+  return {
+    ...row,
+    rent_per_hour: Number(row.rent_per_hour),
+    is_active: Boolean(row.is_active),
+  };
+}
+
+export async function deleteTrainingRoomRentOption(id: number): Promise<boolean> {
+  const res = await pool.query('DELETE FROM training_room_rent_options WHERE id = $1', [id]);
+  return (res.rowCount ?? 0) > 0;
 } 

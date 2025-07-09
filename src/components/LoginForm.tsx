@@ -149,18 +149,6 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               )}
             </button>
           </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Default admin credentials:
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Username: <code className="bg-gray-100 px-1 rounded">admin</code>
-            </p>
-            <p className="text-xs text-gray-500">
-              Password: <code className="bg-gray-100 px-1 rounded">admin</code>
-            </p>
-          </div>
         </form>
       </div>
     </div>
