@@ -8,7 +8,7 @@ import InvoiceForm from '@/components/InvoiceForm';
 import InvoiceFilters, { InvoiceFilters as InvoiceFiltersType } from '@/components/InvoiceFilters';
 import AdminFilters, { AdminFilters as AdminFiltersType } from '@/components/AdminFilters';
 import { filterInvoices, filterAdminTasks, getUniqueCustomers, getAvailableMonths, getAvailableYears } from '@/lib/filterUtils';
-import { Plus, FileText, CheckSquare, LogOut, User, Users, Building2 } from 'lucide-react';
+import { Plus, FileText, CheckSquare, LogOut, User, Users, Building2, BarChart3 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import UserManagement from '@/components/UserManagement';
@@ -119,6 +119,13 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <a
+              href="/dashboard"
+              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>Dashboard</span>
+            </a>
             {(user?.role === 'admin' || user?.role === 'manager') && (
               <button
                 onClick={() => setShowOfficeManagement(true)}
